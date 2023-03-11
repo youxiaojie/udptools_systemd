@@ -43,22 +43,6 @@ fi
 
 build_Udp2raw_Server()
 {
-#写入Udp2Raw配置
-cat > /usr/local/udptools/conf/udp2raw-s${MPORT}.conf <<EOF
--s
-# 服务器模式
--l 0.0.0.0:$LPORT
-# 监听端口给UDP2RAW客户端
--r 127.0.0.1:$MPORT
-# 连接UDPSpeeder端口
--k $PASSWD
-# 密码
---cipher-mode xor
-# 简单xor加密
---fix-gro
-# 修复粘包
-EOF
-
 #写入Udp2Raw脚本
 cat > /usr/local/udptools/udp2raw-s${MPORT}.sh <<EOF
 #!/bin/bash
@@ -68,8 +52,10 @@ export PATH
 PROG=Udp2Raw-Server-${MPORT}
 #BIN路径
 BIN_FILE=/usr/local/udptools/bin/udp2raw
-#配置路径
-CONFIG_FILE=/usr/local/udptools/conf/udp2raw-s${MPORT}.conf
+#配置参数
+CONFIG="-s -l 0.0.0.0:${LPORT} -r 127.0.0.1:${MPORT} -k ${PASSWD} --cipher-mode xor --fix-gro --keep-rule"
+#服务器模式 UDP2RAW客户端连接端口 UDPSpeeder连接端口 密码 简单xor加密 修复粘包 保持iptable规则
+
 #日志路径
 LOG_FILE=/usr/local/udptools/log/udp2raw-s${MPORT}.log
 #PID路径
@@ -87,7 +73,7 @@ checkSet(){
   if [ ! -n "$IPTALBES" ]; then
     echo "Adding iptables rules."
     #添加iptables规则
-    RULES=`$BIN_FILE --conf-file $CONFIG_FILE -g | grep iptables |grep -v rule`
+    RULES=`$BIN_FILE $CONFIG -g | grep iptables |grep -v rule`
     $RULES
   fi
   #赋权
@@ -105,9 +91,9 @@ status(){
 }
 start(){
   #启动进程
-  nohup $BIN_FILE --keep-rule --conf-file $CONFIG_FILE >> $LOG_FILE 2>&1 &
+  nohup $BIN_FILE $CONFIG >> $LOG_FILE 2>&1 &
   #checkSet
-  #sudo -u nobody -b $BIN_FILE --conf-file $CONFIG_FILE >> $LOG_FILE 2>&1
+  #sudo -u nobody -b $BIN_FILE $CONFIG >> $LOG_FILE 2>&1
   #Centos8无法nobody运行
   status
 }
@@ -192,8 +178,8 @@ PROG=UDPspeeder-Server-${MPORT}
 #BIN路径
 BIN_FILE=/usr/local/udptools/bin/udpspeeder
 #配置参数
-CONFIG="-s -l 127.0.0.1:${MPORT} -r 127.0.0.1:${RPORT} --mode 0 -f10:6 --timeout 3"
-#-l 127.0.0.1:${MPORT}监听端口给udp2raw用
+CONFIG="-s -l 0.0.0.0:${MPORT} -r 127.0.0.1:${RPORT} -k ${PASSWD} --mode 0 -f20:10 --timeout 3"
+#-l 0.0.0.0:${MPORT}监听端口给udp2raw用
 #-r 127.0.0.1:${RPORT}连接原始服务端口
 #日志路径
 LOG_FILE=/usr/local/udptools/log/udpspeeder-s${MPORT}.log
@@ -291,23 +277,6 @@ fi
 
 build_Udp2raw_Client()
 {
-#写入Udp2Raw配置
-cat > /usr/local/udptools/conf/udp2raw-c${MPORT}.conf <<EOF
--c
-# 客户端模式
--l 127.0.0.1:$MPORT
-# 监听端口给UdpSpeeder用
--r $REMOTEIP:$RPORT
-# 连接UDP2RAW服务端
--k $PASSWD
-# 密码
---cipher-mode xor
-# 简单xor加密
---fix-gro
-# 修复粘包
-EOF
-
-
 #写入Udp2Raw脚本
 cat > /usr/local/udptools/udp2raw-c${MPORT}.sh <<EOF
 #!/bin/bash
@@ -318,7 +287,9 @@ PROG=Udp2Raw-Client-${MPORT}
 #BIN路径
 BIN_FILE=/usr/local/udptools/bin/udp2raw
 #配置路径
-CONFIG_FILE=/usr/local/udptools/conf/udp2raw-c${MPORT}.conf
+CONFIG="-c -l 0.0.0.0:${MPORT} -r ${REMOTEIP}:${RPORT} -k ${PASSWD} --cipher-mode xor --fix-gro --keep-rule"
+#客户端模式 本地UdpSpeeder客户端连接端口 远程UDP2RAW服务端口 密码 简单xor加密 修复粘包 保持iptable规则
+
 #日志路径
 LOG_FILE=/usr/local/udptools/log/udp2raw-c${MPORT}.log
 #PID路径
@@ -355,9 +326,9 @@ status(){
 }
 start(){
   #启动进程
-  nohup $BIN_FILE --keep-rule --conf-file $CONFIG_FILE >> $LOG_FILE 2>&1 &
+  nohup $BIN_FILE $CONFIG >> $LOG_FILE 2>&1 &
   #checkSet
-  #sudo -u nobody -b $BIN_FILE --conf-file $CONFIG_FILE >> $LOG_FILE 2>&1
+  #sudo -u nobody -b $BIN_FILE $CONFIG >> $LOG_FILE 2>&1
   #Centos8无法nobody运行
   status
 }
@@ -442,7 +413,7 @@ PROG=UDPspeeder-Client-${MPORT}
 #BIN路径
 BIN_FILE=/usr/local/udptools/bin/udpspeeder
 #配置参数
-CONFIG="-c -l 0.0.0.0:${LPORT} -r 127.0.0.1:${MPORT} --mode 0 -f10:6 --timeout 3"
+CONFIG="-c -l 0.0.0.0:${LPORT} -r 127.0.0.1:${MPORT} -k {PASSWD} --mode 0 -f20:10 --timeout 3"
 #-l 0.0.0.0:${LPORT}监听端口给其他程序用
 #-r 127.0.0.1:${MPORT}连接Udp2Raw
 #日志路径
